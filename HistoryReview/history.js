@@ -1,3 +1,4 @@
+console.log("history.js");
 const urlParams = new URLSearchParams(window.location.search);
 const view = urlParams.get('view');
 
@@ -23,11 +24,19 @@ function displayGroupedHistory(history) {
   const historyView = document.getElementById('historyView');
   Object.keys(groupedHistory).forEach(domain => {
     const domainSection = document.createElement('div');
-    domainSection.innerHTML = '<h2>' + domain + '</h2>';
+    domainSection.innerHTML = `<h2>${domain}</h2>`;
     const visitsList = document.createElement('ul');
     groupedHistory[domain].forEach(visit => {
       const listItem = document.createElement('li');
-      listItem.innerHTML = '<a href="' + visit.url + '" target="_blank">' + visit.title + '</a> - ' + new Date(visit.timestamp).toLocaleString();
+      const link = document.createElement('a');
+      link.href = visit.url;
+      link.textContent = visit.title;
+      link.addEventListener('click', function (event) {
+        event.preventDefault();
+        focusOrCreateTab(visit.url);
+      });
+      listItem.appendChild(link);
+      listItem.appendChild(document.createTextNode(` - ${new Date(visit.timestamp).toLocaleString()}`));
       visitsList.appendChild(listItem);
     });
     domainSection.appendChild(visitsList);
@@ -40,8 +49,33 @@ function displayTimelineHistory(history) {
   const timelineList = document.createElement('ul');
   history.forEach(visit => {
     const listItem = document.createElement('li');
-    listItem.innerHTML = '<a href="' + visit.url + '" target="_blank">' + visit.title + '</a> - ' + new Date(visit.timestamp).toLocaleString();
+    const link = document.createElement('a');
+    link.href = visit.url;
+    link.textContent = visit.title;
+    link.addEventListener('click', function (event) {
+      event.preventDefault();
+      focusOrCreateTab(visit.url);
+    });
+    listItem.appendChild(link);
+    listItem.appendChild(document.createTextNode(` - ${new Date(visit.timestamp).toLocaleString()}`));
     timelineList.appendChild(listItem);
   });
   historyView.appendChild(timelineList);
+}
+// chrome.runtime.onMessage.addListener(
+//   function (request, sender, sendResponse) {
+//     if (request.action === "open_dev_tools") {
+//       console.log("open_dev_tools")
+//       // sendResponse({ action: "open_dev_tools" });
+//     }
+//   }
+// );
+function focusOrCreateTab(url) {
+  chrome.tabs.query({ url: url }, function (tabs) {
+    if (tabs.length > 0) {
+      chrome.tabs.update(tabs[0].id, { active: true });
+    } else {
+      chrome.tabs.create({ url: url });
+    }
+  });
 }

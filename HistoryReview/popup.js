@@ -1,9 +1,10 @@
+console.log("popup.js");
 document.getElementById('groupedView').addEventListener('click', function () {
-  chrome.tabs.create({ url: 'history.html?view=grouped' });
+  focusOrCreateTab('history.html?view=grouped');
 });
 
 document.getElementById('timelineView').addEventListener('click', function () {
-  chrome.tabs.create({ url: 'history.html?view=timeline' });
+  focusOrCreateTab('history.html?view=timeline');
 });
 
 document.getElementById('exportData').addEventListener('click', function () {
@@ -11,6 +12,20 @@ document.getElementById('exportData').addEventListener('click', function () {
   const endDate = new Date(document.getElementById('endDate').value).getTime();
   exportHistory(startDate, endDate);
 });
+
+function focusOrCreateTab(urlPattern) {
+  const queryPattern = `chrome-extension://${chrome.runtime.id}/history.html?view=*`;
+
+  chrome.tabs.query({ url: queryPattern }, function (tabs) {
+    const matchingTab = tabs.find(tab => tab.url.includes(queryPattern.replace('*', '')));
+    if (matchingTab) {
+      chrome.tabs.update(matchingTab.id, { active: true, url: urlPattern });
+    } else {
+      chrome.tabs.create({ url: urlPattern });
+    }
+  });
+}
+
 
 function exportHistory(startDate, endDate) {
   chrome.storage.local.get('history', function (data) {
