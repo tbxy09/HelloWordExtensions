@@ -50,6 +50,7 @@ function displayTimelineHistory(history) {
   history.forEach(visit => {
     const listItem = document.createElement('li');
     const link = document.createElement('a');
+    console.log("show visit", visit.title, visit.url);
     link.href = visit.url;
     link.textContent = visit.title;
     link.addEventListener('click', function (event) {
@@ -73,7 +74,9 @@ function displayTimelineHistory(history) {
 function focusOrCreateTab(url) {
   chrome.tabs.query({ url: url }, function (tabs) {
     if (tabs.length > 0) {
-      chrome.tabs.update(tabs[0].id, { active: true });
+      chrome.windows.update(tabs[0].windowId, { focused: true }, function () {
+        chrome.tabs.update(tabs[0].id, { active: true });
+      });
     } else {
       chrome.tabs.create({ url: url });
     }

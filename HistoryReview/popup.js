@@ -19,7 +19,9 @@ function focusOrCreateTab(urlPattern) {
   chrome.tabs.query({ url: queryPattern }, function (tabs) {
     const matchingTab = tabs.find(tab => tab.url.includes(queryPattern.replace('*', '')));
     if (matchingTab) {
-      chrome.tabs.update(matchingTab.id, { active: true, url: urlPattern });
+      chrome.windows.update(matchingTab.windowId, { focused: true }, function () {
+        chrome.tabs.update(matchingTab.id, { active: true, url: urlPattern });
+      });
     } else {
       chrome.tabs.create({ url: urlPattern });
     }
