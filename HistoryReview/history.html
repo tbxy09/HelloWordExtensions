@@ -1,12 +1,25 @@
+<!-- history.html -->
+
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Navigation History</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>Browsing History</title>
+  <style>
+    /* Add your custom styles here */
+  </style>
 </head>
 <body>
-  <h1>Navigation History</h1>
-  <div id="historyView"></div>
+  <div id="tabSwitch">
+    <button data-filter="latest2Days">Latest 2 Days</button>
+    <button data-filter="lastWeek">Last Week</button>
+    <button data-filter="fromWebsite">From Website</button>
+    <button id="editFilter">Edit Filter</button>
+  </div>
+
+  <div id="historyContainer">
+    <!-- History items will be dynamically inserted here -->
+  </div>
+
   <script src="history.js"></script>
 </body>
 </html>
