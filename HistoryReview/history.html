@@ -4,6 +4,8 @@
 <html>
 <head>
   <title>Browsing History</title>
+  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'wasm-unsafe-eval' 'inline-speculation-rules' http://localhost:* http://127.0.0.1:* https://cdn.jsdelivr.net;">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dashjs/dist/dash.all.min.css">
   <style>
     /* Add your custom styles here */
   </style>
@@ -20,6 +22,27 @@
     <!-- History items will be dynamically inserted here -->
   </div>
 
+  <div id="windowSelect">
+    <label for="windowList">Select Window:</label>
+    <select id="windowList">
+      <!-- Window options will be dynamically populated -->
+    </select>
+    <button id="moveTabButton">Move Tab</button>
+  </div>
+
+  <div id="editFilterModal" style="display: none;">
+    <h3>Edit Filter</h3>
+    <label for="startDate">Start Date:</label>
+    <input type="date" id="startDate" required>
+    <label for="endDate">End Date:</label>
+    <input type="date" id="endDate" required>
+    <label for="website">Website:</label>
+    <input type="text" id="website" placeholder="Enter website URL">
+    <button id="applyFilterButton">Apply Filter</button>
+    <button id="closeModalButton">Close</button>
+  </div>
+  <div id="timelineContainer"></div>
+  <script src="lib/dash.all.min.js"></script>
   <script src="history.js"></script>
 </body>
 </html>

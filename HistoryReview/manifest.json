@@ -17,12 +17,12 @@
     "default_popup": "popup.html"
   },
   "commands": {
-    "open_dev_tools": {
+    "execute_move_tab_to_window": {
       "suggested_key": {
         "default": "Alt+Shift+Y",
         "mac": "Command+Shift+Y"
       },
-      "description": "Open Chrome Developer Tools"
+      "description": "Move tab to a specific window"
     }
   },
   "chrome_url_overrides": {

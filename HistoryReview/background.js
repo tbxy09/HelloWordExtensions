@@ -1,35 +1,69 @@
 // background.js
 
 // IndexedDB schema
-const dbName = 'BrowsingHistory';
-const dbVersion = 1;
+const dbName = 'HistoryPreview';
+let dbVersion = 1;
 const storeName = 'visits';
-
+let dbReady = false;
 let db;
 
 // Open or create the IndexedDB database
-const request = indexedDB.open(dbName, dbVersion);
+function openDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(dbName, dbVersion);
 
-request.onerror = function (event) {
-  console.error('Error opening database:', event.target.error);
-};
+    request.onerror = function (event) {
+      console.error('Error opening database:', event.target.error);
+      reject(event.target.error);
+    };
 
-request.onsuccess = function (event) {
-  db = event.target.result;
-  console.log('Database opened successfully');
-};
+    request.onsuccess = function (event) {
+      db = event.target.result;
+      console.log('Database opened successfully');
+      resolve(db);
+    };
 
-request.onupgradeneeded = function (event) {
-  db = event.target.result;
-  const objectStore = db.createObjectStore(storeName, { keyPath: 'visitId', autoIncrement: true });
-  objectStore.createIndex('url', 'url', { unique: false });
-  objectStore.createIndex('visitTime', 'visitTime', { unique: false });
-  objectStore.createIndex('referringVisitId', 'referringVisitId', { unique: false });
-  console.log('Object store created');
-};
+    request.onupgradeneeded = function (event) {
+      db = event.target.result;
+      const objectStore = db.createObjectStore(storeName, { keyPath: 'visitId', autoIncrement: true });
+      objectStore.createIndex('url', 'url', { unique: false });
+      objectStore.createIndex('visitTime', 'visitTime', { unique: false });
+      objectStore.createIndex('referringVisitId', 'referringVisitId', { unique: false });
+      // objectStore.createIndex('title', 'title', { unique: false });
+      console.log('Object store created');
+    };
+  });
+}
+
+// Then, when you need to use the database:
+openDatabase().then(() => {
+  // clear all item with title is empty
+  const transaction = db.transaction([storeName], 'readwrite');
+  const objectStore = transaction.objectStore(storeName);
+  const index = objectStore.index('url');
+  const request = index.openCursor();
+  request.onsuccess = function (event) {
+    const cursor = event.target.result;
+    if (cursor) {
+      //  if url start with extension://bnpnejfbdfkaihjkcmhioandbaffdhma/history.html
+      if (!cursor.value.title || cursor.value.url.startsWith('chrome-extension://bnpnejfbdfkaihjkcmhioandbaffdhma')) {
+        objectStore.delete(cursor.primaryKey);
+      }
+      cursor.continue();
+    }
+  };
+  dbReady = true;
+}).catch((error) => {
+  console.error('Error opening database:', error);
+});
 
 // Helper function to save visit to the database
 function saveVisit(visit) {
+  if (!dbReady) {
+    console.log('Database is not ready');
+    return;
+  }
+  console.log("saveVisit", visit)
   const transaction = db.transaction([storeName], 'readwrite');
   const objectStore = transaction.objectStore(storeName);
   const request = objectStore.add(visit);
@@ -45,6 +79,11 @@ function saveVisit(visit) {
 
 // Helper function to update visit in the database
 function updateVisit(visit) {
+  if (!dbReady) {
+    console.log('Database is not ready');
+    return;
+  }
+  console.log("updateVisit", visit)
   const transaction = db.transaction([storeName], 'readwrite');
   const objectStore = transaction.objectStore(storeName);
   const request = objectStore.put(visit);
@@ -60,6 +99,10 @@ function updateVisit(visit) {
 
 // Helper function to get the last visit for a tab
 function getLastVisitForTab(tabId, callback) {
+  if (!dbReady) {
+    console.log('Database is not ready');
+    return;
+  }
   const transaction = db.transaction([storeName], 'readonly');
   const objectStore = transaction.objectStore(storeName);
   const index = objectStore.index('visitTime');
@@ -81,24 +124,30 @@ function getLastVisitForTab(tabId, callback) {
   };
 }
 
-// Helper function to check if a URL is already open in a tab
-function isUrlOpenInTab(url, callback) {
+function isUrlOpenInTab(url, currentTabId, callback) {
   chrome.tabs.query({}, function (tabs) {
-    const matchingTab = tabs.find(tab => tab.url === url);
+    // Exclude the current tab from the search to prevent it from finding itself
+    const matchingTab = tabs.find(tab => tab.url === url && tab.id !== currentTabId);
     callback(matchingTab);
   });
 }
-
+function isNotURL(url) {
+  return !url.startsWith('http://') && !url.startsWith('https://');
+}
 // Tab created event handler
 chrome.tabs.onCreated.addListener(function (tab) {
-  isUrlOpenInTab(tab.url, function (matchingTab) {
+  // Use the function and pass the current tab's ID to exclude it from the search
+  if (isNotURL(tab.url)) {
+    return;
+  }
+  isUrlOpenInTab(tab.url, tab.id, function (matchingTab) {
     if (matchingTab) {
       // Close the newly created tab if a matching tab exists
       chrome.tabs.remove(tab.id, function () {
         console.log('Duplicate tab closed');
       });
     } else {
-      // Create a new visit record if no matching tab exists
+      // This part of the logic remains unchanged - create a new visit record if no matching tab exists
       const visit = {
         url: tab.url,
         title: tab.title,
@@ -112,49 +161,78 @@ chrome.tabs.onCreated.addListener(function (tab) {
   });
 });
 
+chrome.commands.onCommand.addListener(function (command) {
+  if (command === '_execute_move_tab_to_window') {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      const currentTab = tabs[0];
+      // Replace with the ID of the window you want to move the tab to
+      const targetWindowId = 1;
+      moveTabToWindow(currentTab.id, targetWindowId);
+    });
+  }
+});
+
 // Tab updated event handler
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+  if (isNotURL(tab.url)) {
+    return;
+  }
   if (changeInfo.status === 'complete') {
-    getLastVisitForTab(tabId, function (lastVisit) {
-      if (lastVisit) {
-        const isSameSite = new URL(lastVisit.url).hostname === new URL(tab.url).hostname;
-        if (isSameSite) {
-          // Update existing visit record
-          const updatedVisit = {
-            visitId: lastVisit.visitId,
-            url: tab.url,
-            title: tab.title,
-            visitTime: Date.now(),
-            referringVisitId: lastVisit.visitId,
-            status: 'open',
-            tabId: tabId
-          };
-          updateVisit(updatedVisit);
+    setTimeout(() => {
+      getLastVisitForTab(tabId, function (lastVisit) {
+        if (lastVisit) {
+          // check the url is valid
+          console.log("lastVisit", lastVisit.url, tab.url)
+          if (!tab.url) {
+            return;
+          }
+          const isSameSite = new URL(lastVisit.url).hostname === new URL(tab.url).hostname;
+          if (isSameSite) {
+            // Update existing visit record
+            console.log("update existing visit record using the same site")
+            //  query the opened tab with the same tabId to get the title
+            chrome.tabs.get(tabId, function (currentTab) {
+              const updatedVisit = {
+                visitId: lastVisit.visitId,
+                url: currentTab.url,
+                title: currentTab.title,
+                visitTime: new Date().getTime(),
+                referringVisitId: lastVisit.visitId,
+                status: 'open',
+                tabId: tabId
+              };
+              updateVisit(updatedVisit);
+            })
+          } else {
+            // Create new visit record for different site
+            chrome.tabs.get(tabId, function (currentTab) {
+              const newVisit = {
+                url: currentTab.url,
+                title: currentTab.title,
+                visitTime: Date.now(),
+                referringVisitId: lastVisit.visitId,
+                status: 'open',
+                tabId: tabId
+              };
+              saveVisit(newVisit);
+            });
+          }
         } else {
-          // Create new visit record for different site
-          const newVisit = {
-            url: tab.url,
-            title: tab.title,
-            visitTime: Date.now(),
-            referringVisitId: lastVisit.visitId,
-            status: 'open',
-            tabId: tabId
-          };
-          saveVisit(newVisit);
+          // Create new visit record for new tab
+          chrome.tabs.get(tabId, function (currentTab) {
+            const newVisit = {
+              url: currentTab.url,
+              title: currentTab.title,
+              visitTime: Date.now(),
+              referringVisitId: null,
+              status: 'open',
+              tabId: tabId
+            };
+            saveVisit(newVisit);
+          });
         }
-      } else {
-        // Create new visit record for new tab
-        const newVisit = {
-          url: tab.url,
-          title: tab.title,
-          visitTime: Date.now(),
-          referringVisitId: null,
-          status: 'open',
-          tabId: tabId
-        };
-        saveVisit(newVisit);
-      }
-    });
+      });
+    }, 1000);
   }
 });
 
@@ -183,6 +261,12 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     const { filter } = request;
     getFilteredVisits(filter, function (visits) {
       sendResponse({ visits: visits });
+    });
+    return true; // Required to use sendResponse asynchronously
+  } else if (request.action === 'createFrozenFilterView') {
+    const { filterCriteria } = request;
+    createFrozenFilterView(filterCriteria, function (frozenViewTabId) {
+      sendResponse({ tabId: frozenViewTabId });
     });
     return true; // Required to use sendResponse asynchronously
   }
@@ -224,4 +308,37 @@ function getFilteredVisits(filter, callback) {
     console.error('Error getting filtered visits:', event.target.error);
     callback([]);
   };
+}
+
+// Helper function to create a frozen filter view in a new tab
+function createFrozenFilterView(filterCriteria, callback) {
+  const frozenViewUrl = chrome.runtime.getURL('frozen_view.html') + '?filter=' + encodeURIComponent(JSON.stringify(filterCriteria));
+  chrome.tabs.create({ url: frozenViewUrl }, function (tab) {
+    callback(tab.id);
+  });
+}
+
+// Message listener for moving tabs between windows
+chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
+  if (request.action === 'moveTabToWindow') {
+    const { tabId, windowId } = request;
+    moveTabToWindow(tabId, windowId);
+  }
+});
+
+// Helper function to move a tab to a different window and focus on it
+function moveTabToWindow(tabId, windowId) {
+  chrome.tabs.move(tabId, { windowId: windowId, index: -1 }, function (movedTab) {
+    console.log('Tab moved to window:', movedTab);
+
+    // Focus on the window
+    chrome.windows.update(windowId, { focused: true }, function () {
+      console.log('Window focused:', windowId);
+
+      // Focus on the tab
+      chrome.tabs.update(movedTab.id, { active: true }, function () {
+        console.log('Tab focused:', movedTab.id);
+      });
+    });
+  });
 }
