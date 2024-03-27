@@ -57,6 +57,54 @@ openDatabase().then(() => {
   console.error('Error opening database:', error);
 });
 
+//helper functions to peek mode
+var historyWindowId = null;
+var historyWindowId = null;
+
+
+// Add an event listener for the onRemoved event
+chrome.windows.onRemoved.addListener(function (windowId) {
+  // If the closed window is the history window, reset historyWindowId
+  if (windowId === historyWindowId) {
+    historyWindowId = null;
+  }
+});
+function focuseorOpenHistoryInPeekMode(peekMode) {
+  var historyUrl = 'history.html?view=timeline';
+  var peekWidth = 400; // Adjust the width as needed
+  var peekHeight = 600; // Adjust the height as needed
+
+  chrome.windows.getCurrent(function (currentWindow) {
+    var updateInfo = {
+      url: chrome.runtime.getURL(historyUrl),
+      width: peekWidth,
+      height: peekHeight,
+      type: 'popup'
+    };
+
+    if (peekMode === 'side') {
+      updateInfo.left = currentWindow.left + currentWindow.width;
+      updateInfo.top = currentWindow.top;
+    } else if (peekMode === 'center') {
+      updateInfo.left = currentWindow.left + Math.floor((currentWindow.width - peekWidth) / 2);
+      updateInfo.top = currentWindow.top + Math.floor((currentWindow.height - peekHeight) / 2);
+    }
+
+    if (historyWindowId === null) {
+      chrome.windows.create(updateInfo, function (window) {
+        historyWindowId = window.id;
+      });
+    } else {
+      // chrome.windows.update(historyWindowId, updateInfo);
+      // switch to the windown id and refresh the page
+      chrome.windows.update(historyWindowId, { focused: true }, function () {
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+          chrome.tabs.update(tabs[0].id, { url: historyUrl });
+        });
+      });
+    }
+  });
+}
 // Helper function to save visit to the database
 function saveVisit(visit) {
   if (!dbReady) {
@@ -170,6 +218,11 @@ chrome.commands.onCommand.addListener(function (command) {
       moveTabToWindow(currentTab.id, targetWindowId);
     });
   }
+  // command to open the history in center peek and side peek
+  if (command === '_execute_open_history_center_peek') {
+    // chrome.tabs.create({ url: 'history.html' });
+    focuseorOpenHistoryInPeekMode('center');
+  }
 });
 
 // Tab updated event handler
@@ -269,6 +322,9 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
       sendResponse({ tabId: frozenViewTabId });
     });
     return true; // Required to use sendResponse asynchronously
+  } else if (request.action === 'openExtensionPage') {
+    const { mode } = request.mode
+    focuseorOpenHistoryInPeekMode(mode);
   }
 });
 
