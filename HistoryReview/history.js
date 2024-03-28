@@ -165,11 +165,16 @@ function displayTimelineHistory(history) {
       tabs.forEach(function (tab) {
         if (tab.url === visit.url) {
           // link.style.color = 'green';
-          link.insertAdjacentHTML('afterbegin', `
-            <svg height="20" width="10">
-              <line x1="5" y1="0" x2="5" y2="20" style="stroke:rgb(255,0,0);stroke-width:2" />
-            </svg>
-          `);
+          // add the status check if the link element already has AdjacentHTML to indicate the link is already open, no need to add the svg again
+          if (link.getAttribute('data-status') !== 'open') {
+            link.insertAdjacentHTML('afterbegin', `
+              <svg height="20" width="10">
+                <line x1="5" y1="0" x2="5" y2="20" style="stroke:rgb(255,0,0);stroke-width:2" />
+              </svg>
+            `);
+            // add a status to indicate the link element already has AdjacentHTML
+            link.setAttribute('data-status', 'open');
+          }
         } else {
           link.style.color = 'gray';
         }

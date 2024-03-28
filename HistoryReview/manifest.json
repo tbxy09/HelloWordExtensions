@@ -3,13 +3,20 @@
   "name": "History Review",
   "version": "1.0",
   "description": "A description of my Chrome extension",
+  "minimum_chrome_version": "118",
   "permissions": [
     "webNavigation",
+    "scripting",
     "history",
     "storage",
     "tabs",
-    "commands"
+    "commands",
+    "activeTab",
+    "sidePanel"
   ],
+  "side_panel": {
+    "default_path": "side_panel.html"
+  },
   "background": {
     "service_worker": "background.js"
   },
@@ -19,7 +26,10 @@
         "<all_urls>"
       ],
       "js": [
-        "keymaster.js",
+        "lib/keymaster.js",
+        "lib/dash.all.min.js",
+        "lib/mermaid.min.js",
+        "side_panel.js",
         "content.js"
       ]
     }
@@ -36,6 +46,17 @@
       "description": "Move tab to a specific window"
     }
   },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "side_panel.html",
+        "side_panel.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
   "chrome_url_overrides": {
     "history": "history.html"
   }

@@ -2,13 +2,46 @@
 if (typeof key == 'function') {
     // Define a function to run when "Shift + A" is pressed
     key('shift+a', function () {
-        // console.log('Shift + A is pressed!');
-        // alert('Shift + A is pressed!');
-        // open window if not exist, else close it
         chrome.runtime.sendMessage({ action: 'openExtensionPage', mode: 'center' });
-        // openHistoryInPeekMode('center');
-        // Here you can add your logic to open your extension's main page in different modes
+    });
+    key('shift+c', function () {
+        // chrome.scripting.executeScript({
+        //     target: { tabId: tab.id },
+        //     files: ['side_pannel.js']
+        // });
+        // chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+        //     chrome.sidePanel.open(tabs[2].id);
+        // });
+        chrome.runtime.sendMessage({ action: 'openExtensionPage', mode: 'right' });
     });
 } else {
     console.error('Keymaster library not loaded.');
+}
+
+function renderMermaidDiagrams() {
+    const codeBlocks = document.querySelectorAll('pre');
+    // create an array of code blocks for store the following code
+    let codeArray = [];
+    codeBlocks.forEach(block => {
+        const header = block.querySelector('p.text-xs');
+        if (header && header.textContent.trim().toLowerCase() === 'mermaid') {
+            const code_block = block.querySelector('.code-block__code')
+            const code = code_block.textContent;
+            codeArray.push(code);
+            // console.log(code)
+            // const mermaidContainer = document.createElement('div');
+            // mermaidContainer.className = 'mermaid';
+            // mermaidContainer.textContent = code;
+            // code_block.parentNode.insertBefore(mermaidContainer, code_block.nextSibling);
+
+            // mermaid.init(undefined, mermaidContainer);
+        }
+    });
+}
+
+function getQuestions() {
+    const elements = document.querySelectorAll('div[data-message-author-role="user"]');
+    const questions = Array.from(elements)
+        .map(element => element.textContent.trim())
+    return questions;
 }

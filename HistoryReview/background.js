@@ -323,6 +323,29 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     });
     return true; // Required to use sendResponse asynchronously
   } else if (request.action === 'openExtensionPage') {
+    if (request.mode === 'right') {
+      console.log('right open side bar')
+      // focuseorOpenHistoryInPeekMode('side');
+      // chrome.sidePanel.open();
+      if (!sender.tab.url) return;
+      const url = new URL(sender.tab.url);
+      // Enables the side panel on google.com
+      if (url.origin.startsWith('https')) {
+        chrome.sidePanel.open({ tabId: sender.tab.id })
+        chrome.sidePanel.setOptions({
+          tabId: sender.tab.id,
+          path: 'side_panel.html',
+          enabled: true
+        });
+      } else {
+        // Disables the side panel on all other sites
+        chrome.sidePanel.setOptions({
+          tabId: sender.tab.id,
+          enabled: false
+        });
+      }
+
+    }
     const { mode } = request.mode
     focuseorOpenHistoryInPeekMode(mode);
   }
