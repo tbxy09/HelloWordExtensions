@@ -421,3 +421,99 @@ function moveTabToWindow(tabId, windowId) {
     });
   });
 }
+
+async function backupDatabase() {
+  // Request permission to save a file
+  const handle = await window.showSaveFilePicker({
+    types: [{
+      description: 'JSON file',
+      suggestedName: 'history_backup',
+      accept: {
+        'application/json': ['.json']
+      }
+    }],
+    startIn: 'downloads' // Optional: Start in the Downloads folder
+  });
+
+  if (!handle) {
+    // User canceled the file selection
+    return;
+  }
+
+  // Get all visits from IndexedDB
+  const transaction = db.transaction([storeName], 'readonly');
+  const objectStore = transaction.objectStore(storeName);
+  const request = objectStore.getAll();
+
+  request.onsuccess = async function (event) {
+    const visits = event.target.result;
+
+    // Create a JSON blob from the visits data
+    const blob = new Blob([JSON.stringify(visits)], { type: 'application/json' });
+
+    // Write the blob to the file
+    try {
+      const writableStream = await handle.createWritable();
+      await writableStream.write(blob);
+      await writableStream.close();
+      console.log('Backup file saved successfully.');
+    } catch (error) {
+      console.error('Error saving backup file:', error);
+      // Handle error (e.g., display a message to the user)
+    }
+  };
+
+  request.onerror = function (event) {
+    console.error('Error getting visits from IndexedDB:', event.target.error);
+    // Handle error (e.g., display a message to the user)
+  };
+}
+
+// Function to retrieve all history and summarize
+function retrieveAllHistoryAndSummarize() {
+  chrome.history.search({ text: '', startTime: 0, maxResults: 0 }, function (historyItems) {
+    if (historyItems.length === 0) {
+      console.log("No history items found.");
+      return;
+    }
+
+    // Calculate time range
+    let earliestTime = historyItems[0].lastVisitTime;
+    let latestTime = historyItems[0].lastVisitTime;
+    historyItems.forEach(function (item) {
+      earliestTime = Math.min(earliestTime, item.lastVisitTime);
+      latestTime = Math.max(latestTime, item.lastVisitTime);
+    });
+
+    // Convert timestamps to readable date strings
+    const earliestDate = new Date(earliestTime).toLocaleString();
+    const latestDate = new Date(latestTime).toLocaleString();
+
+    // Log the summary
+    console.log(`Total history items: ${historyItems.length} `);
+    console.log(`Earliest visit: ${earliestDate} `);
+    console.log(`Latest visit: ${latestDate} `);
+
+    // Back up the database before saving new visits
+    backupDatabase().then(() => {
+      // Save visits to IndexedDB
+      historyItems.forEach(function (item) {
+        const visit = {
+          url: item.url,
+          title: item.title,
+          visitTime: item.lastVisitTime,
+          referringVisitId: null, // Assuming no referring visit for now
+          status: 'closed', // Assuming all retrieved history items are closed
+          tabId: null // No tab ID available for history items
+        };
+        saveVisit(visit);
+      });
+    }).catch((error) => {
+      console.error('Error during backup:', error);
+      // You might want to handle the error here, e.g., display a message to the user
+    });
+  });
+}
+
+
+
