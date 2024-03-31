@@ -14,9 +14,6 @@
     "activeTab",
     "sidePanel"
   ],
-  "side_panel": {
-    "default_path": "side_panel.html"
-  },
   "background": {
     "service_worker": "background.js"
   },
@@ -27,9 +24,6 @@
       ],
       "js": [
         "lib/keymaster.js",
-        "lib/dash.all.min.js",
-        "lib/mermaid.min.js",
-        "side_panel.js",
         "content.js"
       ]
     }
@@ -56,8 +50,5 @@
         "<all_urls>"
       ]
     }
-  ],
-  "chrome_url_overrides": {
-    "history": "history.html"
-  }
+  ]
 }

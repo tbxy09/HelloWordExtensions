@@ -14,6 +14,17 @@ if (typeof key == 'function') {
         // });
         chrome.runtime.sendMessage({ action: 'openExtensionPage', mode: 'right' });
     });
+    key('shift+x', function () {
+        chrome.runtime.sendMessage({
+            action: 'retrieveAllHistoryAndSummarize',
+        });
+    });
+    key('shift+y', function () {
+        chrome.runtime.sendMessage({
+            action: 'backupDatabase',
+        });
+    });
+
 } else {
     console.error('Keymaster library not loaded.');
 }

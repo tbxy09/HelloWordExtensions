@@ -28,7 +28,6 @@ function focusOrCreateTab(urlPattern) {
   });
 }
 
-
 function exportHistory(startDate, endDate) {
   chrome.storage.local.get('history', function (data) {
     const history = data.history || [];

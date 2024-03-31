@@ -8,7 +8,7 @@
 //     }
 // });
 // with a fixed size of mermaid diagram div
-mermaid.initialize({ startOnLoad: true });
+mermaid.initialize({ startOnLoad: true, theme: 'forest', flowchart: { useMaxWidth: false, htmlLabels: true } });
 
 
 // Initialize the script by adding the button
@@ -70,10 +70,7 @@ if (typeof key == 'function') {
             mermaid.mermaidAPI.parse(code);
             mermaid.init(undefined, mermaidDiagramDiv.querySelector('.mermaid'));
         } catch (error) {
-            // Show the error in the page
-            const errorMessage = document.createElement('p');
-            errorMessage.textContent = 'Diagram code is invalid with error message: ' + error;
-            document.body.appendChild(errorMessage);
+            mermaidDiagramDiv.textContent = 'Diagram code is invalid with error message: ' + error;
         }
     });
 } else {
@@ -82,6 +79,27 @@ if (typeof key == 'function') {
     error.textContent = 'Keymaster library not loaded.';
     document.body.appendChild(error);
 }
+
+document.getElementById('copyToClipboard').addEventListener('click', function () {
+    const svgContent = document.querySelector('.mermaid').innerHTML; // Assuming your Mermaid diagram is the first .mermaid element
+    navigator.clipboard.writeText(svgContent).then(() => {
+        alert('Diagram copied to clipboard!');
+    }).catch(err => {
+        console.error('Error copying diagram: ', err);
+    });
+});
+
+// Peek feature to open the larger view of the Mermaid SVG
+document.querySelector('.mermaid').addEventListener('click', function () {
+    const enlargedView = document.getElementById('diagramPreview');
+    enlargedView.style.display = 'flex'; // Show the container
+    enlargedView.querySelector('.diagram-preview-content').innerHTML = this.innerHTML; // Copy the SVG content
+});
+
+// Close the enlarged view when clicked
+document.getElementById('diagramPreview').addEventListener('click', function () {
+    this.style.display = 'none'; // Hide the container
+});
 
 
 // Quick navigation links
