@@ -346,6 +346,17 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === "getFilteredVisits") {
     const { filter } = request;
     getFilteredVisits(filter, function (visits) {
+      visits = visits.map((visit) => {
+        // Add a status indicator for open tabs
+        chrome.tabs.query({}, function (tabs) {
+          tabs.forEach(function (tab) {
+            if (tab.url === visit.url) {
+              visit.status = "open";
+            }
+          });
+        });
+        return visit;
+      })
       sendResponse({ visits: visits });
     });
     return true; // Required to use sendResponse asynchronously
@@ -404,7 +415,7 @@ function getFilteredVisits(filter, callback) {
   } else if (filter === "fromWebsite") {
     // Implement logic to get visits from a specific website
     // You can use the 'url' index to filter visits based on the website URL
-    // range = IDBKeyRange.only(websiteUrl);
+    range = IDBKeyRange.only(websiteUrl);
   }
 
   const visits = [];

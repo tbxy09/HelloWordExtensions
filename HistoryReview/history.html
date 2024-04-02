@@ -2,13 +2,13 @@
 
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Browsing History</title>
-  <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'wasm-unsafe-eval' 'inline-speculation-rules' http://localhost:* http://127.0.0.1:* https://cdn.jsdelivr.net;">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dashjs/dist/dash.all.min.css">
-  <style>
-    /* Add your custom styles here */
-  </style>
+  <head>
+    <title>Browsing History</title>
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'wasm-unsafe-eval' 'inline-speculation-rules' http://localhost:* http://127.0.0.1:* https://cdn.jsdelivr.net;">
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/dashjs/dist/dash.all.min.css"> -->
+    <style>
+      /* Add your custom styles here */
+      </style>
 </head>
 <body>
   <div id="tabSwitch">
@@ -16,6 +16,18 @@
     <button data-filter="lastWeek">Last Week</button>
     <button data-filter="fromWebsite">From Website</button>
     <button id="editFilter">Edit Filter</button>
+  </div>
+  
+  <div id="editFilterModal" style="display: none;">
+    <h3>Edit Filter</h3>
+    <label for="startDate">Start Date:</label>
+    <input type="date" id="startDate" required>
+    <label for="endDate">End Date:</label>
+    <input type="date" id="endDate" required>
+    <label for="website">Website:</label>
+    <input type="text" id="website" placeholder="Enter website URL">
+    <button id="applyFilterButton">Apply Filter</button>
+    <button id="closeModalButton">Close</button>
   </div>
 
   <div id="historyContainer">
@@ -30,19 +42,9 @@
     <button id="moveTabButton">Move Tab</button>
   </div>
 
-  <div id="editFilterModal" style="display: none;">
-    <h3>Edit Filter</h3>
-    <label for="startDate">Start Date:</label>
-    <input type="date" id="startDate" required>
-    <label for="endDate">End Date:</label>
-    <input type="date" id="endDate" required>
-    <label for="website">Website:</label>
-    <input type="text" id="website" placeholder="Enter website URL">
-    <button id="applyFilterButton">Apply Filter</button>
-    <button id="closeModalButton">Close</button>
-  </div>
   <div id="timelineContainer"></div>
   <script src="lib/dash.all.min.js"></script>
+  <script src="./timeline_view.js"></script>
   <script src="history.js"></script>
 </body>
 </html>

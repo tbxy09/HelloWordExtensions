@@ -1,3 +1,4 @@
+// import { TimelineView } from './timeline_view.js';
 const urlParam = new URLSearchParams(window.location.search);
 const view = urlParam.get('view');
 
@@ -6,17 +7,9 @@ const view = urlParam.get('view');
 function renderHistory(visits) {
   const historyContainer = document.getElementById('historyContainer');
   historyContainer.innerHTML = '';
-  displayTimelineHistory(visits);
-  // visits.forEach(function (visit) {
-  //   const visitElement = document.createElement('div');
-  //   visitElement.innerHTML = `
-  //     <p>${visit.title}</p>
-  //     <p>${visit.url}</p>
-  //     <p>Status: ${visit.status}</p>
-  //     <!-- Add connection and opened indicators -->
-  //   `;
-  //   historyContainer.appendChild(visitElement);
-  // });
+  // displayTimelineHistory(visits);
+  timeline = timelineView('historyContainer');
+  timeline.render(visits);
 }
 
 // Function to handle filter tab switching
@@ -35,8 +28,9 @@ function handleEditFilter() {
 
 // Function to handle applying the edited filter
 function handleApplyFilter() {
-  const startDate = document.getElementById('startDate').value;
-  const endDate = document.getElementById('endDate').value;
+  // default value for startDate and endDate for 1 week ago
+  const startDate = document.getElementById('startDate').value || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const endDate = document.getElementById('endDate').value || new Date().toISOString();
   const website = document.getElementById('website').value;
 
   const filterCriteria = {
