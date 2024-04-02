@@ -15,7 +15,13 @@ function renderHistory(visits) {
 // Function to handle filter tab switching
 function handleFilterTabSwitch(event) {
   const filter = event.target.dataset.filter;
-  chrome.runtime.sendMessage({ action: 'getFilteredVisits', filter: filter }, function (response) {
+  chrome.runtime.sendMessage({
+    action: 'getFilteredVisits',
+    filterCriteria: {
+      dateRange: filter, // 'latest2Days' or 'latestWeek' or 'latestMonth' or 'allTime'
+      website: ''//optional
+    }
+  }, function (response) {
     renderHistory(response.visits);
   });
 }
@@ -101,9 +107,15 @@ moveTabButton.addEventListener('click', handleMoveTab);
 populateWindowSelect();
 
 // Initial rendering of the history
-chrome.runtime.sendMessage({ action: 'getFilteredVisits', filter: 'latest2Days' }, function (response) {
-  renderHistory(response.visits);
-});
+// chrome.runtime.sendMessage({
+//   action: 'getFilteredVisits',
+//   filterCriteria: {
+//     dateRange: 'latest2Days', // 'latest2Days' or 'latestWeek' or 'latestMonth' or 'allTime'
+//     website: ''//optional
+//   }
+// }, function (response) {
+//   renderHistory(response.visits);
+// });
 
 function displayGroupedHistory(history) {
   const groupedHistory = {};
@@ -247,7 +259,13 @@ function fetchVisitsByTimeRange(startTime, endTime) {
 // ... existing code ...
 
 // Initial rendering of the history
-chrome.runtime.sendMessage({ action: 'getFilteredVisits', filter: 'latest2Days' }, function (response) {
+chrome.runtime.sendMessage({
+  action: 'getFilteredVisits',
+  filterCriteria: {
+    dateRange: 'latest2Days', // 'latest2Days' or 'latestWeek' or 'latestMonth' or 'allTime'
+    website: ''//optional
+  }
+}, function (response) {
   renderHistory(response.visits);
   initializeTimeline(response.visits);
 });

@@ -344,14 +344,15 @@ chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
 // Message listener for filter views
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === "getFilteredVisits") {
-    const { filter } = request;
-    getFilteredVisits(filter, function (visits) {
+    const { filterCriteria } = request;
+    getFilteredVisits(filterCriteria, function (visits) {
       visits = visits.map((visit) => {
         // Add a status indicator for open tabs
         chrome.tabs.query({}, function (tabs) {
           tabs.forEach(function (tab) {
             if (tab.url === visit.url) {
-              visit.status = "open";
+              // visit.status = "open";
+              console.log("open tab", visit.url);
             }
           });
         });
@@ -400,22 +401,18 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
 });
 
 // Helper function to get filtered visits based on the selected filter
-function getFilteredVisits(filter, callback) {
+function getFilteredVisits(filterCriteria, callback) {
   const transaction = db.transaction([storeName], "readonly");
   const objectStore = transaction.objectStore(storeName);
   const index = objectStore.index("visitTime");
   let range;
-
-  if (filter === "latest2Days") {
+  console.log("filterCriteria", filterCriteria);
+  if (filterCriteria.dateRange === "latest2Days") {
     const startTime = Date.now() - 2 * 24 * 60 * 60 * 1000; // 2 days ago
     range = IDBKeyRange.lowerBound(startTime);
-  } else if (filter === "lastWeek") {
+  } else if (filterCriteria.dateRange === "lastWeek") {
     const startTime = Date.now() - 7 * 24 * 60 * 60 * 1000; // 7 days ago
     range = IDBKeyRange.lowerBound(startTime);
-  } else if (filter === "fromWebsite") {
-    // Implement logic to get visits from a specific website
-    // You can use the 'url' index to filter visits based on the website URL
-    range = IDBKeyRange.only(websiteUrl);
   }
 
   const visits = [];
@@ -424,7 +421,13 @@ function getFilteredVisits(filter, callback) {
   request.onsuccess = function (event) {
     const cursor = event.target.result;
     if (cursor) {
-      visits.push(cursor.value);
+      if (
+        !filterCriteria.website ||
+        (filterCriteria.website &&
+          cursor.value.url.includes(filterCriteria.website))
+      ) {
+        visits.push(cursor.value);
+      }
       cursor.continue();
     } else {
       callback(visits);

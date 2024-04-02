@@ -18,20 +18,26 @@ class TimeLineView {
                 event.preventDefault();
                 focusOrCreateTab(visit.url);
             });
-            // add color color
-            if (visit.status === 'open') {
-                // add a status mark
-                if (link.getAttribute('data-status') !== 'open') {
-                    link.insertAdjacentHTML('afterbegin', `
-                    <svg height="20" width="10">
-                        <line x1="5" y1="0" x2="5" y2="20" style="stroke:rgb(255,0,0);stroke-width:2" />
-                    </svg>`);
-                    // add a status to indicate the link element already has AdjacentHTML
-                    link.setAttribute('data-status', 'open');
-                } else {
-                    link.style.color = 'gray';
-                }
-            }
+            // Add a color marker for open tabs
+            chrome.tabs.query({}, function (tabs) {
+                tabs.forEach(function (tab) {
+                    if (tab.url === visit.url) {
+                        // link.style.color = 'green';
+                        // add the status check if the link element already has AdjacentHTML to indicate the link is already open, no need to add the svg again
+                        if (link.getAttribute('data-status') !== 'open') {
+                            link.insertAdjacentHTML('afterbegin', `
+              <svg height="20" width="10">
+                <line x1="5" y1="0" x2="5" y2="20" style="stroke:rgb(255,0,0);stroke-width:2" />
+              </svg>
+            `);
+                            // add a status to indicate the link element already has AdjacentHTML
+                            link.setAttribute('data-status', 'open');
+                        }
+                    } else {
+                        link.style.color = 'gray';
+                    }
+                });
+            })
             // if visit is label as highlit, add a highlight background color
             if (visit.highlight) {
                 listItem.style.backgroundColor = 'yellow';
@@ -41,7 +47,7 @@ class TimeLineView {
                 listItem.style.backgroundColor = '#f0f0f0';
             }
             listItem.appendChild(link);
-            listItem.appendChild(document.createTextNode(` - ${new Date(visit.timestamp).toLocaleString()}`));
+            listItem.appendChild(document.createTextNode(` - ${new Date(visit.visitTime).toLocaleString()}`));
             historyContainer.appendChild(listItem);
         });
 
