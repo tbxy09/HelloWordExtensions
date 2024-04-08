@@ -195,8 +195,21 @@ function displayTimelineHistory(history) {
 }
 // chrome.runtime.onMessage.addListener(
 //   function (request, sender, sendResponse) {
-//     if (request.action === "open_dev_tools") {
-//       console.log("open_dev_tools")
+//     if (request.action === "backupDatabase") {
+//       // create download URL
+//       let blob = new Blob([JSON.stringify(request.data)], { type: 'application/json' });
+//       let url = URL.createObjectURL(blob);
+//       chrome.downloads.download({ url: url, filename: 'history_backup.json' }, function () {
+//         if (chrome.runtime.lastError) {
+//           console.error(chrome.runtime.lastError);
+//         } else {
+//           console.log('History backup downloaded successfully.');
+//         }
+//         // It's important to release the URL once you're done to avoid memory leaks
+//         URL.revokeObjectURL(url);
+//       });
+
+
 //       // sendResponse({ action: "open_dev_tools" });
 //     }
 //   }
@@ -255,8 +268,6 @@ function fetchVisitsByTimeRange(startTime, endTime) {
     renderHistory(response.visits);
   });
 }
-
-// ... existing code ...
 
 // Initial rendering of the history
 chrome.runtime.sendMessage({

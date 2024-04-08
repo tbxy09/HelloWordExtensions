@@ -481,26 +481,6 @@ function moveTabToWindow(tabId, windowId) {
 }
 
 async function backupDatabase(format = "json") {
-  // Request permission to save a file
-  const handle = await window.showSaveFilePicker({
-    types: [
-      {
-        description: `${format.toUpperCase()} file`,
-        suggestedName: `history_backup.${format}`,
-        accept: {
-          "application/json": [".json"],
-          "text/csv": [".csv"],
-          "text/markdown": [".md"],
-        },
-      },
-    ],
-    startIn: "downloads", // Optional: Start in the Downloads folder
-  });
-
-  if (!handle) {
-    // User canceled the file selection
-    return;
-  }
 
   // Get all visits from IndexedDB
   const transaction = db.transaction([storeName], "readonly");
@@ -526,16 +506,14 @@ async function backupDatabase(format = "json") {
     // Create a blob from the data
     const blob = new Blob([data], { type: `application/${format}` });
 
-    // Write the blob to the file
-    try {
-      const writableStream = await handle.createWritable();
-      await writableStream.write(blob);
-      await writableStream.close();
-      console.log("Backup file saved successfully.");
-    } catch (error) {
-      console.error("Error saving backup file:", error);
-      // Handle error (e.g., display a message to the user)
-    }
+    // send message to the content.js to download the file
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, {
+        action: "downloadBackup",
+        blob: blob,
+        format: format,
+      });
+    });
   };
 
   request.onerror = function (event) {

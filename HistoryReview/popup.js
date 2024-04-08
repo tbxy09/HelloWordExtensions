@@ -46,3 +46,56 @@ function copyToClipboard(text) {
   document.execCommand('copy');
   document.body.removeChild(textarea);
 }
+// function copyToClipboard(text) {
+//   const textarea = document.createElement('textarea');
+//   textarea.value = text;
+//   document.body.appendChild(textarea);
+//   textarea.select();
+//   document.execCommand('copy');
+//   document.body.removeChild(textarea);
+// }
+// add a button to backup the database
+document.getElementById('ExportJson').addEventListener('click', function () {
+  chrome.runtime.sendMessage({
+    action: 'backupDatabase',
+    format: 'json',
+  }, function (response) {
+    alert('Database backup successful!');
+    // copy to the clipboard
+    // copyToClipboard(response.backupData);
+    // create URL
+    const url = URL.createObjectURL(new Blob([response.backupData], { type: 'application/json' }));
+    // download the file
+    chrome.downloads.download({ url: url, filename: 'history_backup.json' }, function () {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError);
+      } else {
+        console.log('History backup downloaded successfully.');
+      }
+      // It's important to release the URL once you're done to avoid memory leaks
+      URL.revokeObjectURL(url);
+    });
+  });
+  document.getElementById('ExportCSV').addEventListener('click', function () {
+    chrome.runtime.sendMessage({
+      action: 'backupDatabase',
+      format: 'csv',
+    }, function (response) {
+      alert('Database backup successful!');
+      // copy to the clipboard
+      // copyToClipboard(response.backupData);
+      // create URL
+      const url = URL.createObjectURL(new Blob([response.backupData], { type: 'application/csv' }));
+      // download the file
+      chrome.downloads.download({ url: url, filename: 'history_backup.csv' }, function () {
+        if (chrome.runtime.lastError) {
+          console.error(chrome.runtime.lastError);
+        } else {
+          console.log('History backup downloaded successfully.');
+        }
+        // It's important to release the URL once you're done to avoid memory leaks
+        URL.revokeObjectURL(url);
+      });
+    });
+  });
+})
