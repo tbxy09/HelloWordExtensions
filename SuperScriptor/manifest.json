@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Snippet Editor and Runner",
+  "version": "1.0",
+  "description": "Edit and run snippets in content",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "action": {
+    "default_title": "Open Snippet Editor"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "contentScript.js"
+      ]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [
+    {
+      "matches": [
+        "\u003Call_urls>"
+      ],
+      "resources": [
+        "main.js"
+      ]
+    }
+  ]
+}
