@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Tab and Bookmark Access",
+  "version": "1.0",
+  "permissions": [
+    "tabs",
+    "bookmarks",
+    "history",
+    "activeTab",
+    "windows"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ]
+    }
+  ],
+  "externally_connectable": {
+    "matches": [
+      "*://*/*"
+    ]
+  }
+}
