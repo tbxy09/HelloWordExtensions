@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Selective Tab Navigation
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.6
 // @description  Navigate among multiple tabs with the same root URL.
 // @author       Your Name
 // @match        *://*/*
@@ -12,7 +12,7 @@
     'use strict';
     const extensionId = "ihplbpkbbdflgnnedhhidbbnkbahdjik"; // Replace with your actual extension ID
 
-    // URL to navigate
+    // URLs to navigate
     var myURLs = ["https://chatgpt.com", "https://poe.com", "https://github.com"];
 
     // Create a button
@@ -24,46 +24,44 @@
     btn.style.zIndex = "1000";
     btn.style.padding = "10px 20px";
     btn.style.fontSize = "16px";
-    btn.style.background = "#007BFF";
-    btn.style.color = "white";
+    btn.style.background = "#FF5733";
+    btn.style.color = "black";
     btn.style.border = "none";
     btn.style.borderRadius = "5px";
     btn.style.cursor = "pointer";
     btn.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+    btn.title = "Click to select a site tab";
     document.body.appendChild(btn);
 
-    // Dropdown menu for selecting tabs
-    var dropdown = document.createElement("select");
-    dropdown.style.position = "fixed";
-    dropdown.style.bottom = "50px";
-    dropdown.style.right = "20px";
-    dropdown.style.zIndex = "1001";
-    dropdown.style.padding = "5px 10px";
-    dropdown.style.fontSize = "16px";
-    dropdown.style.display = "none"; // initially hidden
-    document.body.appendChild(dropdown);
+    // Custom dropdown menu
+    var dropdownHTML = `
+        <div id="dropdown" style="position: fixed; bottom: 20px; right: 20px; z-index: 1001; display: none;">
+            <div class="dropdown-options" style="display: none;">
+                <!-- Options will be dynamically added here -->
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', dropdownHTML);
+
+    // Get references to the dropdown elements
+    const dropdown = document.getElementById('dropdown');
+    const dropdownOptions = dropdown.querySelector('.dropdown-options');
+
 
     // Check and navigate
     btn.onclick = function () {
+        dropdownOptions.style.display = dropdownOptions.style.display === 'none' ? 'block' : 'none';
         chrome.runtime.sendMessage(extensionId, { action: "getTabs" }, function (response) {
             const tabs = response.tabs;
             let matchingTabs = tabs.filter(tab => myURLs.includes(new URL(tab.url).origin));
 
-            dropdown.innerHTML = ''; // Clear previous entries
+            dropdownOptions.innerHTML = ''; // Clear previous entries
 
             if (matchingTabs.length > 0) {
                 // Populate dropdown with matching tabs
-
-                // Add a default "Select..." option
-                let defaultOption = document.createElement("option");
-                defaultOption.value = "";
-                defaultOption.textContent = "Select...";
-                dropdown.appendChild(defaultOption);
-
                 matchingTabs.forEach(tab => {
-                    let option = document.createElement("option");
-                    option.value = tab.id;
-                    option.textContent = tab.title; // Show title in dropdown
+                    let option = document.createElement("div");
+                    option.className = "dropdown-option";
 
                     // Add favicon to option
                     let icon = document.createElement("img");
@@ -71,9 +69,16 @@
                     icon.style.width = "16px";
                     icon.style.height = "16px";
                     icon.style.marginRight = "5px";
-                    option.prepend(icon);
+                    option.appendChild(icon);
 
-                    dropdown.appendChild(option);
+                    let text = document.createTextNode(tab.title);
+                    option.appendChild(text);
+
+                    option.onclick = function () {
+                        chrome.runtime.sendMessage(extensionId, { action: "updateTab", tabId: tab.id });
+                        dropdownOptions.style.display = 'none'; // Hide the options after selection
+                    };
+                    dropdownOptions.appendChild(option);
                 });
 
                 // Get the origins of the matching tabs
@@ -84,60 +89,53 @@
 
                 // Provide an option to open a new tab for each non-matching URL
                 nonMatchingURLs.forEach(url => {
-                    let option = document.createElement("option");
-                    option.value = url;
-                    option.textContent = `Open new tab at ${url}`; // Show URL in dropdown
+                    let option = document.createElement("div");
+                    option.className = "dropdown-option";
 
                     // Add default icon to option
                     let icon = document.createElement("img");
-                    icon.src = "https://via.placeholder.com/16"; // Replace with your default icon URL
+                    icon.src = `https://www.google.com/s2/favicons?domain_url=${url}`; // Use Google's favicon service
                     icon.style.width = "16px";
                     icon.style.height = "16px";
                     icon.style.marginRight = "5px";
-                    option.prepend(icon);
+                    option.appendChild(icon);
 
-                    dropdown.appendChild(option);
+                    let text = document.createTextNode(`Open new tab at ${url}`);
+                    option.appendChild(text);
+
+                    option.onclick = function () {
+                        chrome.runtime.sendMessage(extensionId, { action: "openLatestVisited", query: url });
+                        dropdownOptions.style.display = 'none'; // Hide the options after selection
+                    };
+                    dropdownOptions.appendChild(option);
                 });
             }
             else {
                 // If no tab matches, provide an option to open a new tab for each URL
-
-                // Add a default "Select..." option
-                let defaultOption = document.createElement("option");
-                defaultOption.value = "";
-                defaultOption.textContent = "Open new tab...";
-                dropdown.appendChild(defaultOption);
-
                 myURLs.forEach(url => {
-                    let option = document.createElement("option");
-                    option.value = url;
-                    option.textContent = `Open latest visisted at ${url}`; // Show URL in dropdown
+                    let option = document.createElement("div");
+                    option.className = "dropdown-option";
 
                     // Add default icon to option
                     let icon = document.createElement("img");
-                    icon.src = "https://via.placeholder.com/16"; // Replace with your default icon URL
+                    icon.src = `https://www.google.com/s2/favicons?domain_url=${url}`; // Use Google's favicon service
                     icon.style.width = "16px";
                     icon.style.height = "16px";
                     icon.style.marginRight = "5px";
-                    option.prepend(icon);
+                    option.appendChild(icon);
 
-                    dropdown.appendChild(option);
+                    let text = document.createTextNode(`Open latest visited at ${url}`);
+                    option.appendChild(text);
+
+                    option.onclick = function () {
+                        chrome.runtime.sendMessage(extensionId, { action: "openLatestVisited", query: url });
+                        dropdownOptions.style.display = 'none'; // Hide the options after selection
+                    };
+                    dropdownOptions.appendChild(option);
                 });
             }
 
             dropdown.style.display = "block"; // Show dropdown
-            dropdown.onchange = function () {
-                if (this.value) { // Only send message if a tab is selected or a URL is chosen
-                    if (myURLs.includes(this.value)) {
-                        // If the selected value is a URL, open a new tab
-                        chrome.runtime.sendMessage(extensionId, { action: "openLatestVisited", query: this.value });
-                    } else {
-                        // If the selected value is a tab ID, update the tab
-                        chrome.runtime.sendMessage(extensionId, { action: "updateTab", tabId: this.value });
-                    }
-                    dropdown.style.display = "none"; // Hide dropdown
-                }
-            }
         });
     }
 
@@ -148,9 +146,47 @@
         }
     });
     document.addEventListener('keydown', function (e) {
-        if (e.altKey && e.key === 'e') { // Alt+E to edit URL
-            var newURL = prompt("Enter new URL:", myURL);
-            if (newURL) myURL = newURL;
+        if (e.altKey && e.key === 'e') { // Alt+E to edit URLs
+            var newURLs = prompt("Enter new URLs (comma-separated):", myURLs.join(", "));
+            if (newURLs) myURLs = newURLs.split(",").map(url => url.trim());
         }
     });
+
+    // Add hover effect to the button
+    btn.addEventListener('mouseover', function () {
+        this.style.background = "#0056b3";
+        this.style.transform = "scale(1.05)";
+    });
+
+    btn.addEventListener('mouseout', function () {
+        this.style.background = "#FF5733";
+        this.style.transform = "scale(1)";
+    });
+
+    // CSS styles for the custom dropdown
+    var style = document.createElement('style');
+    style.innerHTML = `
+        .dropdown-options {
+            display: none;
+            background: white;
+            position: fixed;
+            bottom: 60px;
+            right: 20px;
+            z-index: 1001;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px; 
+            padding: 5px;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .dropdown-option {
+            padding: 5px;
+            cursor: pointer;
+            display: flex;
+            align-items:center;}
+          .dropdown-option:hover {
+        background: #f9f9f9;
+    }`;
+    document.head.appendChild(style);
 })();
