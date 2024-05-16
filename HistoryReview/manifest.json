@@ -4,6 +4,9 @@
   "version": "1.0",
   "description": "A description of my Chrome extension",
   "minimum_chrome_version": "118",
+  "content_security_policy": {
+    "sandbox": "sandbox allow-scripts; script-src 'self' 'unsafe-eval' 'unsafe-inline'; object-src 'self'; script-src-elem * 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com"
+  },
   "permissions": [
     "webNavigation",
     "scripting",
@@ -12,7 +15,8 @@
     "tabs",
     "commands",
     "activeTab",
-    "sidePanel"
+    "sidePanel",
+    "management"
   ],
   "background": {
     "service_worker": "background.js"
@@ -24,6 +28,7 @@
       ],
       "js": [
         "lib/keymaster.js",
+        "keyBindings.js",
         "content.js"
       ]
     }

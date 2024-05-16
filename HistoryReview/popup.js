@@ -7,11 +7,11 @@ document.getElementById('timelineView').addEventListener('click', function () {
   focusOrCreateTab('history.html?view=timeline');
 });
 
-document.getElementById('exportData').addEventListener('click', function () {
-  const startDate = new Date(document.getElementById('startDate').value).getTime();
-  const endDate = new Date(document.getElementById('endDate').value).getTime();
-  exportHistory(startDate, endDate);
-});
+// document.getElementById('exportData').addEventListener('click', function () {
+//   const startDate = new Date(document.getElementById('startDate').value).getTime();
+//   const endDate = new Date(document.getElementById('endDate').value).getTime();
+//   exportHistory(startDate, endDate);
+// });
 
 function focusOrCreateTab(urlPattern) {
   const queryPattern = `chrome-extension://${chrome.runtime.id}/history.html?view=*`;
@@ -55,7 +55,7 @@ function copyToClipboard(text) {
 //   document.body.removeChild(textarea);
 // }
 // add a button to backup the database
-document.getElementById('ExportJson').addEventListener('click', function () {
+document.getElementById('ExportJSON').addEventListener('click', function () {
   chrome.runtime.sendMessage({
     action: 'backupDatabase',
     format: 'json',
@@ -64,9 +64,10 @@ document.getElementById('ExportJson').addEventListener('click', function () {
     // copy to the clipboard
     // copyToClipboard(response.backupData);
     // create URL
+    console.log(response)
     const url = URL.createObjectURL(new Blob([response.backupData], { type: 'application/json' }));
     // download the file
-    chrome.downloads.download({ url: url, filename: 'history_backup.json' }, function () {
+    chrome.downloads.download({ url: url, filename: 'history_backup1.json' }, function () {
       if (chrome.runtime.lastError) {
         console.error(chrome.runtime.lastError);
       } else {

@@ -1,11 +1,16 @@
 // background.js
 
+//add installed log
+chrome.runtime.onInstalled.addListener(function () {
+  console.log("Extension installed");
+});
 // IndexedDB schema
 const dbName = "HistoryPreview";
 let dbVersion = 1;
 const storeName = "visits";
 let dbReady = false;
 let db;
+
 
 // Open or create the IndexedDB database
 function openDatabase() {
@@ -23,20 +28,20 @@ function openDatabase() {
       resolve(db);
     };
 
-    request.onupgradeneeded = function (event) {
-      db = event.target.result;
-      const objectStore = db.createObjectStore(storeName, {
-        keyPath: "visitId",
-        autoIncrement: true,
-      });
-      objectStore.createIndex("url", "url", { unique: false });
-      objectStore.createIndex("visitTime", "visitTime", { unique: false });
-      objectStore.createIndex("referringVisitId", "referringVisitId", {
-        unique: false,
-      });
-      // objectStore.createIndex('title', 'title', { unique: false });
-      console.log("Object store created");
-    };
+    // request.onupgradeneeded = function (event) {
+    //   db = event.target.result;
+    //   const objectStore = db.createObjectStore(storeName, {
+    //     keyPath: "visitId",
+    //     autoIncrement: true,
+    //   });
+    //   objectStore.createIndex("url", "url", { unique: false });
+    //   objectStore.createIndex("visitTime", "visitTime", { unique: false });
+    //   objectStore.createIndex("referringVisitId", "referringVisitId", {
+    //     unique: false,
+    //   });
+    //   // objectStore.createIndex('title', 'title', { unique: false });
+    //   console.log("Object store created");
+    // };
   });
 }
 
@@ -393,10 +398,16 @@ chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
     const { mode } = request.mode;
     focuseorOpenHistoryInPeekMode(mode);
   } else if (request.action === "backupDatabase") {
+    console.log("backupDatabase");
     const { format } = request;
     backupDatabase(format);
   } else if (request.action === "retrieveAllHistoryAndSummarize") {
     retrieveAllHistoryAndSummarize();
+  } else if (request.action === "reloadExtension") {
+    console.log("Reloading extension...");
+    const extensionId = chrome.runtime.id;
+    chrome.management.setEnabled(extensionId, false);
+    chrome.management.setEnabled(extensionId, true);
   }
 });
 
@@ -485,42 +496,40 @@ async function backupDatabase(format = "json") {
   // Get all visits from IndexedDB
   const transaction = db.transaction([storeName], "readonly");
   const objectStore = transaction.objectStore(storeName);
-  const request = objectStore.getAll();
+  // const request = objectStore.getAll();
 
-  request.onsuccess = async function (event) {
-    const visits = event.target.result;
+  // Wrap the IDBRequest in a Promise
+  const visits = await new Promise((resolve, reject) => {
+    const request = objectStore.getAll();
+    request.onsuccess = (event) => resolve(event.target.result);
+    request.onerror = (event) => reject(event.target.error);
+  });
+  console.log(visits)
+  let data;
+  switch (format) {
+    case "csv":
+      data = convertToCSV(visits);
+      break;
+    case "md":
+      data = convertToMarkdown(visits);
+      break;
+    default: // json
+      data = JSON.stringify(visits);
+      break;
+  }
 
-    let data;
-    switch (format) {
-      case "csv":
-        data = convertToCSV(visits);
-        break;
-      case "md":
-        data = convertToMarkdown(visits);
-        break;
-      default: // json
-        data = JSON.stringify(visits);
-        break;
-    }
+  // Create a blob from the data
+  const blob = new Blob([data], { type: `application/${format}` });
 
-    // Create a blob from the data
-    const blob = new Blob([data], { type: `application/${format}` });
-
-    // send message to the content.js to download the file
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        action: "downloadBackup",
-        blob: blob,
-        format: format,
-      });
+  // send message to the content.js to download the file
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    chrome.tabs.sendMessage(tabs[0].id, {
+      action: "downloadBackup",
+      blob: blob,
+      format: format,
     });
-  };
-
-  request.onerror = function (event) {
-    console.error("Error getting visits from IndexedDB:", event.target.error);
-    // Handle error (e.g., display a message to the user)
-  };
-}
+  });
+};
 
 function convertToCSV(visits) {
   // Convert the visits data to CSV format

@@ -214,8 +214,10 @@ function displayTimelineHistory(history) {
 //     }
 //   }
 // );
+
 function focusOrCreateTab(url) {
-  chrome.tabs.query({ url: url }, function (tabs) {
+  const urlWithoutFragment = url.split('#')[0];
+  chrome.tabs.query({ url: urlWithoutFragment + '*' }, function (tabs) {
     if (tabs.length > 0) {
       chrome.windows.update(tabs[0].windowId, { focused: true }, function () {
         chrome.tabs.update(tabs[0].id, { active: true });

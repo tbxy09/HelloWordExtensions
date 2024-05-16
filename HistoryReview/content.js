@@ -1,4 +1,5 @@
 //helper functions to peek mode
+reloadExtension();
 if (typeof key == 'function') {
     // Define a function to run when "Shift + A" is pressed
     key('shift+a', function () {
