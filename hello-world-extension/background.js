@@ -13,13 +13,21 @@ chrome.runtime.onMessageExternal.addListener(
       return true; // Will respond asynchronously.
     }
     else if (request.action === "openLatestVisited") {
-      chrome.history.search({ text: request.query, maxResults: 2 }, function (history) {
-        // sendResponse({ history: history });
-        if (history.length > 0) {
-          chrome.tabs.create({ url: history[0].url });
+      chrome.history.search({ text: "", maxResults: 1000 }, function (history) {
+        // Filter the history to only include root sites that match the query
+        let filteredHistory = history.filter(item => {
+          let url = new URL(item.url);
+          let queryURL = new URL(request.query);
+          return url.hostname.includes(queryURL.hostname);
+        });
+
+        if (filteredHistory.length > 0) {
+          chrome.tabs.create({ url: filteredHistory[0].url });
         }
-        sendResponse({ history: history });
+
+        sendResponse({ history: filteredHistory });
       });
+
       return true; // Will respond asynchronously.
     } else if (request.action === "updateTab" && request.tabId) {
       let tabId = parseInt(request.tabId);
